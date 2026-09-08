@@ -1,4 +1,4 @@
-name: Build Viewsta APK
+name: Viewsta Android Build
 
 on:
   push:
@@ -8,27 +8,33 @@ on:
 
 jobs:
   build:
+    name: Build Viewsta APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
         with:
-          flutter-version: '3.44.7'
-          channel: stable
-          cache: true
+          distribution: temurin
+          java-version: '17'
 
-      - name: Flutter Pub Get
-        run: flutter pub get
+      - name: Enable AndroidX
+        run: |
+          touch gradle.properties
+          grep -qxF 'android.useAndroidX=true' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
+          grep -qxF 'android.enableJetifier=true' gradle.properties || echo 'android.enableJetifier=true' >> gradle.properties
 
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Make Gradle executable
+        run: chmod +x gradlew
 
-      - name: Upload APK
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload Viewsta APK
         uses: actions/upload-artifact@v4
         with:
           name: viewsta-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: app/build/outputs/apk/release/*.apk
